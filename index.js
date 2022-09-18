@@ -22,7 +22,7 @@ const DEMO_FROM_SECRET_KEY = new Uint8Array(
 );
 
 // Get the wallet balance from a given private key
-const printWalletBalances = async (connection, from, to) => {
+const getTransferAmount = async (connection, from, to) => {
   try {
     // Make a wallet (keypair) from privateKey and get its balance
     let walletBalance = await connection.getBalance(
@@ -30,12 +30,15 @@ const printWalletBalances = async (connection, from, to) => {
     );
     let balance = parseInt(walletBalance) / LAMPORTS_PER_SOL;
     console.log(`From wallet balance: ${balance} SOL`);
+    const transferAmount = parseInt(walletBalance)/2;
 
     walletBalance = await connection.getBalance(
         new PublicKey(to.publicKey),
     );
     balance = parseInt(walletBalance) / LAMPORTS_PER_SOL;
     console.log(`To wallet balance: ${balance} SOL`);
+
+    return transferAmount;
   } catch (err) {
     console.log(err);
   }
@@ -56,7 +59,7 @@ const transferSol = async () => {
   // Generate another Keypair (account we'll be sending to)
   const to = Keypair.generate();
 
-  printWalletBalances(connection, from, to);
+  await getTransferAmount(connection, from, to);
 
   // Aidrop 2 SOL to Sender wallet
   console.log("Airdopping some SOL to Sender wallet!");
@@ -78,14 +81,16 @@ const transferSol = async () => {
 
   console.log("Airdrop completed for the Sender account");
 
-  printWalletBalances(connection, from, to);
+  const amount = await getTransferAmount(connection, from, to);
+
+  console.log(`Transfering ${amount/LAMPORTS_PER_SOL} SOl`);
 
   // Send money from "from" wallet and into "to" wallet
   const transaction = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: from.publicKey,
         toPubkey: to.publicKey,
-        lamports: LAMPORTS_PER_SOL / 100,
+        lamports: amount,
       }),
   );
 
@@ -97,7 +102,7 @@ const transferSol = async () => {
   );
   console.log("Signature is ", signature);
 
-  printWalletBalances(connection, from, to);
+  await getTransferAmount(connection, from, to);
 };
 
 transferSol();
